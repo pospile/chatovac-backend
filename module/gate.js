@@ -44,17 +44,23 @@ app.post('/login', function (req, res) {
     var pass = req.body.pass;
     var device_id = req.body.device_id;
 
-
-    dbs.LoginUser(name, pass, device_id, security, function (data) {
-        if (data != false)
-        {
-            res.json(data);
-        }
-        else
-        {
-            res.json({error: true, desc: "Invalid user, password or both"});
-        }
-    });
+    if (device_id === undefined || name === undefined || pass == undefined)
+    {
+        res.json({error: true, desc: "Invalid post data, name, pass, device_id required."});
+    }
+    else
+    {
+        dbs.LoginUser(name, pass, device_id, security, function (data) {
+            if (data != false)
+            {
+                res.json(data);
+            }
+            else
+            {
+                res.json({error: true, desc: "Invalid user, password or both"});
+            }
+        });
+    }
 
 });
 

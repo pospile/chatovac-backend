@@ -222,15 +222,25 @@ exports.ConnectFriends = function (name1, name2, callback) {
     });
 };
 
-exports.GetChatsForUser = function (name, limit, callback) {
-    User.findAsync({user: name}, function (err, user) {
+exports.GetChatsForUser = function (name, callback) {
+    console.log("looking for user");
+    User.find({user: name}, function (err, user) {
+        console.log(user);
         if(user.length > 0)
         {
-            user = user[0];
-            UserInChat.findAsync({user: user.id}, function (err, data) {
+            console.log("account finded");
+            UserInChat.find({user: user[0].id}, function (err, data) {
+                console.log(data);
                if (data.length > 0)
                {
-                   
+                   var chats = [];
+                   for(var i = 0; i < data.length; i++)
+                   {
+                        Chat.find({id: data[i].chat}, function (err2, chat) {
+                            console.log("new chat has been found");
+                            chats.push(chat);
+                        });
+                   }
                }
             });
         }

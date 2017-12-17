@@ -62,6 +62,15 @@ io.on('connection', function(socket){
     });
 
 
+    socket.on("chats", function (data) {
+        console.log("loading chats");
+        dbs.GetChatsForUser(data.name, function (data) {
+           console.log(data);
+           socket.emit("chats_resp", data);
+        });
+    });
+
+
 
     socket.on("disconnect", function () {
         console.log("Socket-device just got offline");
