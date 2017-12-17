@@ -1,16 +1,15 @@
+console.log("Running high-security orm database module");
 var orm = require('orm');
+var moment = require('moment');
 
 
-var is_db_ready = false;
-var db = null;
 
-var Log = null;
-var Job = null;
-var Company = null;
-var Notification = null;
-var Driver = null;
-var DriverPosition = null;
-var Inactive = null;
+var Token = null;
+var User = null;
+var UserInChat = null;
+var Chat = null;
+var ChatLine = null;
+var FriendShip = null;
 
 
 orm.connectAsync('mysql://root:25791998@35.187.189.40/chatovac')
@@ -19,57 +18,43 @@ orm.connectAsync('mysql://root:25791998@35.187.189.40/chatovac')
 
 
         /*DEFINITON OF EVERY SINGLE TABLE IN MYSQL DATABASE*/
-        Log = _db.define("tbLog", {
-            startup : { type: "date", time: true },
-            mac : String,
-            log: String
-        });
 
-        Job = _db.define("tbJob", {
+
+        Chat = _db.define("tbChat", {
             id : {type: 'serial', key: true},
-            name : String,
-            description: String,
-            start: String,
-            target: String,
-            company: Number,
-            active: Number,
-            assigned: Number
+            name : String
         });
-        Company = _db.define("tbCompany", {
-            id: {type: 'serial', key: true},
-            name: String,
-            domain: String
+        UserInChat = _db.define("tbUserInChat", {
+            id : {type: 'serial', key: true},
+            user : Number,
+            chat: Number
         });
-        Notification = _db.define("tbNotification", {
-            id: {type: 'serial', key: true},
-            title: String,
-            description: String,
-            importance: Number,
-            send_to: String
+        User = _db.define("tbUser", {
+            id : {type: 'serial', key: true},
+            user : String,
+            pass: String //THIS IS BCRYPTED()
         });
-        Driver = _db.define("tbDriver", {
-            id: {type: 'serial', key: true},
-            company: Number,
-            phone_id: String,
-            pin_lock: Number,
-            last_online: { type: "date", time: true },
-            first_name: String,
-            last_name: String,
-            car: String
+        Token = _db.define("tbToken", {
+            id : {type: 'serial', key: true},
+            user : Number,
+            token: String,
+            valid_to: { type: "date", time: true },
+            device_id: String
         });
-        DriverPosition = _db.define("tbDriverPosition", {
-            id: {type: 'serial', key: true},
-            latitude: Number,
-            longtitude: Number,
-            adress: String,
-            driver_id: Number
+        ChatLine = _db.define("tbChatLine", {
+            id : {type: 'serial', key: true},
+            text : String,
+            time : { type: "date", time: true },
+            user: Number,
+            chat: Number
         });
-        Inactive = _db.define("tbInactive", {
-           id: {type: 'serial', key: true},
-            phone_id: String,
-            active: Number
+        FriendShip = _db.define("tbFriendship", {
+            id : {type: 'serial', key: true},
+            user1: Number,
+            user2: Number
         });
 
+        /*
         var newRecord = {};
         var now = new Date();
         newRecord.startup = now;
@@ -84,137 +69,173 @@ orm.connectAsync('mysql://root:25791998@35.187.189.40/chatovac')
                     db = _db;
                 });
         })
+        */
     })
     .catch(function(err) {
         console.error('Connection error: ' + err);
     });
 
 
-var NewJob = function (name, desc, company, start, end, callback) {
-    if(!is_db_ready){callback(false);return;}
-
-    console.log("Stopiji proměnou::!:" + end);
-
-    var job = {};
-    job.name = name;
-    job.description = desc;
-    job.company = company;
-    job.start = start;
-    job.target = end;
-
-
-
-    Job.createAsync(job)
-        .then(function (results) {
+exports.NewUser = function (name, pass, device_id, security, callback) {
+    security.EncryptPassword(pass, function (hash) {
+        var user = {};
+        user.user = name;
+        user.pass = hash;
+        User.createAsync(user).then(function (results) {
             console.log(results);
-            callback(job);
-        });
-};
-var LoadJobs = function (callback) {
-  Job.find({}, function (err, jobs) {
-      callback(jobs);
-  });
-};
-var FindDriverById = function (phone_id, callback) {
-    if(!is_db_ready){callback(false);return;}
-    Driver.find({ phone_id: phone_id }, function (err, driver) {
-        // SQL: "SELECT * FROM person WHERE surname = 'Doe'"
-        if (err) throw err;
-
-        console.log("Drivers found: %d", driver.length);
-        if (driver.length == 0) {
-            console.log("Pravděpodobný pokus o napadení!!!");
-            var newRecord = {};
-            var now = new Date();
-            newRecord.startup = now;
-            require('getmac').getMac(function(err,macAddress){
-                if (err)  throw err
-                console.log("Accessing database as: " + macAddress);
-                newRecord.mac = macAddress;
-                newRecord.log = "ERROR: Possible breach -> trying to log with unidentified device.";
-                Log.createAsync(newRecord)
-                    .then(function(results) {
-                        callback(false);
-                    });
-            });
-        }
-        else
-        {
-            callback(driver[0]);
-        }
-    });
-};
-var AddInactiveUser = function (phone_id, callback) {
-    var newRecord = {};
-    newRecord.phone_id = phone_id;
-    newRecord.active = 0;
-    Inactive.find({phone_id: phone_id}, function (err, inactive) {
-        if(inactive.length == 0)
-        {
-            Inactive.createAsync(newRecord)
-                .then(function(results) {
-                    callback(true);
-                });
-        }
-        else {
-            console.log("possible breach again (ddos included).");
-            callback(false);
-        }
-    });
-
-};
-var GetAllInactives = function (callback) {
-    Inactive.find({active: 0}, function (err, inactives) {
-        console.log(inactives);
-        if(inactives.length != 0)
-        {
-            callback(inactives);
-        }
-        else
-        {
-            callback(false);
-        }
-    })
-};
-var ActivateUser = function (data) {
-    Driver.createAsync(data)
-        .then(function(results) {
-
-
-            Inactive.find({phone_id: data.phone_id}, function (err, inactive) {
-                // SQL: "SELECT * FROM person WHERE surname = 'Doe'"
-                if (err) throw err;
-
-                console.log("People found: %d", inactive.length);
-
-                inactive[0].active = 1;
-                inactive[0].save(function (err) {
-                    // err.msg = "under-age";
-                });
-            });
-
-            /*
-            Inactive.find({phone_id: data.phone_id}, function (err, inactive) {
-                console.log(inactive);
-               inactive[0].active = 1;
-               inactive[0].save(function (data) {
-                    console.log("Inaktivní zařízení převedeno na řidiče.");
+            security.GenerateToken(function (tkn) {
+               var token = {};
+               token.user = results.id;
+               token.token = tkn;
+               token.valid_to = new Date(moment().add(1, "M"));
+               token.device_id = device_id;
+               Token.createAsync(token).then(function (res) {
+                   var ultm = {};
+                   ultm.user = results;
+                   ultm.token = res;
+                   callback(ultm);
                });
             });
+            /*
+            security.GenerateToken(function (token) {
+
+            });
             */
-        });
+        })
+    });
+};
+exports.LoginUser = function (name, pass, device_id, security, callback) {
+    User.find({user: name}, function (err, user) {
+        if (!err)
+        {
+            if (user.length > 0)
+            {
+                console.log(user);
+                security.VerifyPassword(user[0].pass, pass, function (real)
+                {
+                    if (real)
+                    {
+                        console.log("Heslo se shoduje");
+                        security.GenerateToken(function (tkn) {
+                            var token = {};
+                            token.user = user[0].id;
+                            token.token = tkn;
+                            token.valid_to = new Date(moment().add(1, "M"));
+                            token.device_id = device_id;
+                            Token.createAsync(token).then(function (res) {
+                                var ultm = {};
+                                ultm.user = user[0];
+                                ultm.token = res;
+                                callback(ultm);
+                            });
+                        });
+                    }
+                    else
+                    {
+                        console.log("Hesla se neshodují");
+                        callback(false);
+                    }
+                });
+            }
+            else
+            {
+                console.log("user neexistuje");
+                callback(false);
+            }
+        }
+    });
+};
+exports.CheckToken = function (user, token, device_id, callback) {
+    User.find({user: user}, function (err, user) {
+        if (!err) {
+            if (user.length > 0) {
+                console.log(user);
+                Token.find({user: user[0].id, token: token},function (err2, token) {
+                    if (token.length > 0) {
+                        console.log(token);
+
+                        if (moment(token[0].valid_to) > moment())
+                        {
+                            console.log("token by měl být stále validní");
+                            callback({valid: true, desc: "token will expire " + moment(token[0].valid_to).from(moment())});
+                        }
+                        else
+                        {
+                            console.log("tokenu již vypršela platnost, systém mu nebude důvěřovat");
+                            callback({valid: false, desc: "Token has expired"});
+                        }
+
+                    }
+                    else {
+                        console.log("No token released, please log-in first");
+                        callback({valid: false, desc: "No token available, invalid token, or user isn't logged."});
+                    }
+                });
+            }
+            else
+            {
+                console.log("No one with this name exist, therefore token not available");
+                callback({valid: false, desc: "Invalid data"});
+            }
+        }
+    });
 };
 
+exports.ConnectFriends = function (name1, name2, callback) {
+    User.find({user: name1}, function (err, user1) {
+        if (!err)
+        {
+            if (user1.length > 0)
+            {
+                User.find({user: name2}, function (err, user2) {
+                    if (!err)
+                    {
+                        if (user2.length > 0)
+                        {
+                            console.log("Both users exists, connecting them together");
+                            var friends = {};
+                            friends.user1 = user1[0].id;
+                            friends.user2 = user2[0].id;
+                            FriendShip.createAsync(friends).then(function (friendship) {
+                                var chat = {};
+                                chat.name = user1[0].user + " s " + user2[0].user;
+                                Chat.createAsync(chat).then(function (chat) {
+                                    var user_in_chat = {};
+                                    user_in_chat.user = user1[0].id;
+                                    user_in_chat.chat = chat.id;
+                                    UserInChat.createAsync(user_in_chat).then(function () {
+                                        var user_in_chat2 = {};
+                                        user_in_chat2.user = user2[0].id;
+                                        user_in_chat2.chat = chat.id;
+                                        UserInChat.createAsync(user_in_chat2).then(function () {
+                                            console.log("Friendship is completed and confirmed. Chat room is created")
+                                            callback(true);
+                                        });
+                                    });
+                                });
+                            });
+                        }
+                    }
+                });
+            }
+        }
+    });
+};
 
-exports.CreateNewJob = NewJob;
-exports.LoadJobs = LoadJobs;
-exports.FindDriverById = FindDriverById;
-exports.AddInactiveUser = AddInactiveUser;
-exports.GetAllInactives = GetAllInactives;
-exports.ActivateUser = ActivateUser;
-exports.NewJob = NewJob;
-
-
+exports.GetChatsForUser = function (name, limit, callback) {
+    User.findAsync({user: name}, function (err, user) {
+        if(user.length > 0)
+        {
+            user = user[0];
+            UserInChat.findAsync({user: user.id}, function (err, data) {
+               if (data.length > 0)
+               {
+                   
+               }
+            });
+        }
+    });
+};
 
 
 /* -- přidá novou company --
