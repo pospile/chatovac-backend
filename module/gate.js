@@ -31,6 +31,10 @@ app.post('/register', function (req, res) {
     var device_id = req.body.device_id;
 
 
+    if (device_id === undefined || name === undefined || pass == undefined)
+    {
+        res.json({error: true, desc: "Invalid post data, name, pass, device_id required."});
+    }
     dbs.NewUser(name, pass, device_id, security, function (data) {
         console.log("New user has been registered.");
         res.json(data);
@@ -67,8 +71,13 @@ app.post('/login', function (req, res) {
 app.post('/token', function (req, res) {
 
     var name = req.body.name;
-    var token = req.body.pass;
+    var token = req.body.token;
     var device_id = req.body.device_id;
+
+    if (device_id === undefined || name === undefined || token == undefined)
+    {
+        res.json({error: true, desc: "Invalid post data, name, token, device_id required."});
+    }
 
     dbs.CheckToken(name, token, device_id, function (data) {
        res.json(data);

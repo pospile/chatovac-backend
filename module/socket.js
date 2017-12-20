@@ -70,6 +70,17 @@ io.on('connection', function(socket){
         });
     });
 
+    socket.on("chat", function (data) {
+       dbs.GetChatContent(data.chat_id, data.limit, data.offset, function (data) {
+          socket.emit("chat_resp", data);
+       });
+    });
+
+    socket.on("text_message", function (data) {
+       dbs.SendChatMessage(data.chat_id, data.name, data.message, function (data) {
+          socket.emit("text_message_resp", data);
+       });
+    });
 
 
     socket.on("disconnect", function () {

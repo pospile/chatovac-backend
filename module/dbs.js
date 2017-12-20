@@ -233,17 +233,56 @@ exports.GetChatsForUser = function (name, callback) {
                 console.log(data);
                if (data.length > 0)
                {
-                   var chats = [];
                    for(var i = 0; i < data.length; i++)
                    {
                         Chat.find({id: data[i].chat}, function (err2, chat) {
                             console.log("new chat has been found");
-                            chats.push(chat);
+                            callback(chat[0]);
                         });
                    }
                }
             });
         }
+    });
+};
+
+exports.GetChatContent = function (chat_id, limit, offset, callback) {
+    console.log("getting chat with limit: " + limit + " offset:" + offset);
+    ChatLine.find({chat: chat_id}, parseInt(limit), {offset:offset}, function (err, chat_line) {
+            if(chat_line.length > 0) {
+                console.log("limit: " + limit + " vs: " + chat_line.length);
+                callback(chat_line);
+            }
+    });
+};
+
+exports.SendChatMessage = function (chat_id, user, message, callback) {
+    console.log("sending new message");
+    console.log("searching for: " + user);
+    User.find({user: user}, function (err, user) {
+        console.log(user);
+        var user_id = user[0].id;
+
+        UserInChat.find({user: user_id, chat: chat_id}, function (err, chtr) {
+            if (chtr.length > 0)
+            {
+                var chat_line = {};
+                chat_line.text = message;
+                chat_line.time = new Date(moment());
+                chat_line.user = user_id;
+                chat_line.chat = chat_id;
+
+                ChatLine.createAsync(chat_line).then(function (result) {
+                    console.log(result);
+                    callback(result);
+                });
+            }
+            else
+            {
+                console.log("Chat is not available (does not exist)");
+            }
+        });
+
     });
 };
 
