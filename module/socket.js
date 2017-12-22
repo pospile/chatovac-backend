@@ -6,6 +6,7 @@ var dbs = require("./dbs.js");
 io.on('connection', function(socket){
     var user_logged = false;
     var user_id;
+    var receive_realtime_messages;
 
     console.log("New socket-connection received starting timer");
     setTimeout(function () {

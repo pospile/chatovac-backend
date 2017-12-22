@@ -282,7 +282,6 @@ exports.SendChatMessage = function (chat_id, user, message, callback) {
                 console.log("Chat is not available (does not exist)");
             }
         });
-
     });
 };
 
