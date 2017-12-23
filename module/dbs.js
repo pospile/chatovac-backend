@@ -1,6 +1,8 @@
 console.log("Running high-security orm database module");
 var orm = require('orm');
 var moment = require('moment');
+moment.locale("cs");
+
 
 
 
@@ -198,7 +200,7 @@ exports.ConnectFriends = function (name1, name2, callback) {
                             friends.user2 = user2[0].id;
                             FriendShip.createAsync(friends).then(function (friendship) {
                                 var chat = {};
-                                chat.name = user1[0].user + " s " + user2[0].user;
+                                chat.name = user1[0].user + " a " + user2[0].user;
                                 Chat.createAsync(chat).then(function (chat) {
                                     var user_in_chat = {};
                                     user_in_chat.user = user1[0].id;
@@ -243,15 +245,92 @@ exports.GetChatsForUser = function (name, callback) {
                }
             });
         }
+        else
+        {
+            callback({valid:false, error: "No user with this name found"});
+        }
+    });
+};
+
+exports.GetChatsForUserAsync = function (name, callback) {
+    console.log("looking for user");
+    User.find({user: name}, function (err, user) {
+        console.log(user);
+        if(user.length > 0)
+        {
+            console.log("account finded");
+            UserInChat.find({user: user[0].id}, function (err, data) {
+                console.log(data);
+                if (data.length > 0)
+                {
+                    var last = false;
+                    var sended = 0;
+                    for(var i = 0; i < data.length; i++)
+                    {
+
+                        Chat.find({id: data[i].chat}, function (err2, chat) {
+                            if (sended === data.length-1)
+                            {
+                                last=true;
+                                console.log("last one, sending result away.");
+                            }
+                            else
+                            {
+                                sended++;
+                            }
+                            console.log("new chat has been found");
+
+                            callback(chat[0], last);
+                        });
+                    }
+                }
+            });
+        }
+        else
+        {
+            callback({valid:false, error: "No user with this name found"});
+        }
+    });
+};
+
+exports.GetLastMsgForChat = function (chat_id, callback) {
+    ChatLine.find({chat: chat_id}).order("-id").limit(1).run(function (err, msg) {
+        if (moment(msg[0].time).dayOfYear() === moment().dayOfYear())
+        {
+            msg[0].time =  moment(msg[0].time).hours() + ":" + moment(msg[0].time).minutes();
+        }
+        else
+        {
+            msg[0].time =  moment(msg[0].time).format("dddd [v]") + " " + moment(msg[0].time).hours() + ":" + moment(msg[0].time).minutes();
+        }
+        callback(msg);
     });
 };
 
 exports.GetChatContent = function (chat_id, limit, offset, callback) {
+    chat_id = parseInt(chat_id);
+    limit = parseInt(limit);
+    offset = parseInt(offset);
     console.log("getting chat with limit: " + limit + " offset:" + offset);
     ChatLine.find({chat: chat_id}, parseInt(limit), {offset:offset}, function (err, chat_line) {
+
+            var i = 0;
+            chat_line.forEach(function (value) {
+               //value.time = moment(value).unix();
+                chat_line[i].time = moment(chat_line[i].time).unix();
+                if (i === chat_line.length-1)
+                {
+                    callback(chat_line);
+                }
+                i++;
+            });
             if(chat_line.length > 0) {
                 console.log("limit: " + limit + " vs: " + chat_line.length);
-                callback(chat_line);
+
+            }
+            else
+            {
+                callback([]);
             }
     });
 };
@@ -285,64 +364,3 @@ exports.SendChatMessage = function (chat_id, user, message, callback) {
     });
 };
 
-
-/* -- přidá novou company --
-var Person = db.define("tbCompany", {
-    name : String,
-    domain: String,
-    id: {type: 'serial', key: true}
-});
-var newRecord = {};
-newRecord.name = "Vojta Taxi";
-
-Person.createAsync(newRecord)
-    .then(function(results) {
-        console.log(results);
-    });
-*/
-
-/* -- přidá nový job do databáze
-
-
-var job = {};
-job.name = "Testovací job";
-job.description = "Testovací popisek jobu";
-job.company = 1;
-Job.createAsync(job)
-    .then(function (results) {
-        console.log(results);
-    });
-
-
-*/
-
-/*
-
-Types
-
-The supported types are:
-
-text: A text string;
-number: A floating point number. You can specify size: 2|4|8.
-integer: An integer. You can specify size: 2|4|8.
-boolean: A true/false value;
-date: A date object. You can specify time: true
-enum: A value from a list of possible values;
-object: A JSON object;
-point: A N-dimensional point (not generally supported);
-binary: Binary data.
-serial: Auto-incrementing integer. Used for primary keys.
-Each type can have additional options. Here's a model definition using most of them:
-
-var Person = db.define("person", {
-    id      : {type: 'serial', key: true},
-	name    : { type: "text", size: 50 },
-	surname : { type: "text", defaultValue: "Doe" },
-	male    : { type: "boolean" },
-	vat     : { type: "integer", unique: true },
-	country : { type: "enum", values: [ "USA", "Canada", "Rest of the World" ] },
-	birth   : { type: "date", time: false }
-});
-
-
-*/

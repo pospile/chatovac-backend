@@ -24,7 +24,7 @@ app.get('/', function (req, res) {
     res.json({"status": "running", "version": 0.2});
 });
 
-app.post('/register', function (req, res) {
+app.post('/user/register', function (req, res) {
 
     var name = req.body.name;
     var pass = req.body.pass;
@@ -42,7 +42,7 @@ app.post('/register', function (req, res) {
 
 });
 
-app.post('/login', function (req, res) {
+app.post('/user/login', function (req, res) {
 
     var name = req.body.name;
     var pass = req.body.pass;
@@ -68,7 +68,7 @@ app.post('/login', function (req, res) {
 
 });
 
-app.post('/token', function (req, res) {
+app.post('/user/token', function (req, res) {
 
     var name = req.body.name;
     var token = req.body.token;
@@ -84,6 +84,53 @@ app.post('/token', function (req, res) {
     });
 
 });
+
+app.post('/chat/get', function (req, res) {
+
+    var name = req.body.name;
+    var token = req.body.token;
+
+
+    var result = [];
+    console.log("loading chats");
+    dbs.GetChatsForUserAsync(name, function (data, send) {
+        console.log(data);
+        result.push(data);
+        if (send)
+        {
+            res.json(result);
+        }
+    });
+});
+
+app.post('/chat/get/last', function (req, res) {
+
+    var chat_id = req.body.chat_id;
+    var token = req.body.token;
+
+    console.log("Sending back last message");
+
+   dbs.GetLastMsgForChat(chat_id, function (data) {
+      res.json(data);
+   });
+});
+
+app.post('/chat/get/id', function (req, res) {
+
+    var chat_id = req.body.chat_id;
+    var limit = req.body.limit;
+    var offset = req.body.offset;
+    var token = req.body.token;
+
+    console.log("Sending back messages");
+
+    dbs.GetChatContent(chat_id, limit, offset, function (data) {
+        res.json(data);
+    });
+
+});
+
+
 
 
 app.listen(config.rest_port, function () {
