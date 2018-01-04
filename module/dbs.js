@@ -293,6 +293,24 @@ exports.GetChatsForUserAsync = function (name, callback) {
     });
 };
 
+
+exports.GetAvatarForChat = function (chat_id, ignored_id, callback) {
+    UserInChat.find({chat: chat_id}).order("-id").run(function (err, users) {
+        users.forEach(function (value) {
+            if (value.user !== ignored_id){
+
+                //TODO:// REPLACE WITH RETURNING GRAVATAR URL!
+                console.log(value);
+            }
+            else
+            {
+                console.log("ignored");
+            }
+        });
+    });
+};
+
+
 exports.GetLastMsgForChat = function (chat_id, callback) {
     ChatLine.find({chat: chat_id}).order("-id").limit(1).run(function (err, msg) {
         if (moment(msg[0].time).dayOfYear() === moment().dayOfYear())

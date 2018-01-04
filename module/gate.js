@@ -115,6 +115,21 @@ app.post('/chat/get/last', function (req, res) {
    });
 });
 
+app.post('/chat/avatar', function (req, res) {
+
+    var chat_id = req.body.chat_id;
+    var user_id = req.body.user_id;
+    var token = req.body.token;
+
+    console.log("Finding avatar");
+
+    dbs.GetAvatarForChat(chat_id, user_id, function (data) {
+       console.log(data);
+    });
+
+});
+
+
 app.post('/chat/get/id', function (req, res) {
 
     var chat_id = req.body.chat_id;
@@ -129,6 +144,23 @@ app.post('/chat/get/id', function (req, res) {
     });
 
 });
+
+app.post('/chat/send', function (req, res) {
+
+    var chat_id = req.body.chat_id;
+    var name = req.body.name;
+    var message = req.body.message;
+    var token = req.body.token;
+
+    console.log("Sending message");
+
+    dbs.SendChatMessage(chat_id, name, message, function (data) {
+        res.json(data);
+    });
+
+});
+
+
 
 
 
