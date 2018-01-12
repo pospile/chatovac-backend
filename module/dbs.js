@@ -217,8 +217,16 @@ exports.ConnectFriends = function (name1, name2, callback) {
                                 });
                             });
                         }
+                        else
+                        {
+                            callback(false);
+                        }
                     }
                 });
+            }
+            else
+            {
+                callback(false);
             }
         }
     });

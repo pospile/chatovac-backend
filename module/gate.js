@@ -160,6 +160,28 @@ app.post('/chat/send', function (req, res) {
 
 });
 
+app.post('/friends/connect', function (req, res) {
+
+    var user1 = req.body.user1;
+    var user2 = req.body.user2;
+    var token = req.body.token;
+
+    console.log("Sending message");
+
+    dbs.ConnectFriends(user1, user2, function (data) {
+        console.log("Connection friends...");
+        console.log(data);
+        if (data) {
+            res.json({"error": false, "desc": "chat created && friendship created"});
+        }
+        else {
+            res.json({"error": true, "desc": "invalid username2&&||token"});
+        }
+
+    });
+
+});
+
 
 
 
