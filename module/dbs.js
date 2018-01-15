@@ -13,11 +13,14 @@ var Chat = null;
 var ChatLine = null;
 var FriendShip = null;
 
+var db = null;
+
 
 orm.connectAsync('mysql://root:25791998@35.187.189.40/chatovac')
     .then(function(_db) {
        console.log("Connected successfully...");
 
+       db = _db;
 
         /*DEFINITON OF EVERY SINGLE TABLE IN MYSQL DATABASE*/
 
@@ -292,11 +295,15 @@ exports.GetChatsForUserAsync = function (name, callback) {
                         });
                     }
                 }
+                else
+                {
+                    callback({valid:false, error: "No user chat found"}, true);
+                }
             });
         }
         else
         {
-            callback({valid:false, error: "No user with this name found"});
+            callback({valid:false, error: "No user with this name found"}, true);
         }
     });
 };
@@ -387,6 +394,13 @@ exports.SendChatMessage = function (chat_id, user, message, callback) {
                 console.log("Chat is not available (does not exist)");
             }
         });
+    });
+};
+
+exports.GetAllRegisteredUsers = function (callback) {
+    db.driver.execQuery("SELECT id, user FROM tbUser", function (err, data) {
+        console.log(data);
+        callback(data);
     });
 };
 

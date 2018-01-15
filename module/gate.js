@@ -160,7 +160,7 @@ app.post('/chat/send', function (req, res) {
 
 });
 
-app.post('/friends/connect', function (req, res) {
+app.post('/users/connect', function (req, res) {
 
     var user1 = req.body.user1;
     var user2 = req.body.user2;
@@ -181,6 +181,19 @@ app.post('/friends/connect', function (req, res) {
     });
 
 });
+
+app.post('/users/get', function (req, res) {
+
+    var token = req.body.token;
+
+    console.log("Returning users");
+
+    dbs.GetAllRegisteredUsers(function (data) {
+       res.json(data);
+    });
+
+});
+
 
 
 
