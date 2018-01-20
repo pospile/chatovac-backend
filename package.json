@@ -31,6 +31,7 @@
     "gravatar": "^1.6.0",
     "moment": "^2.19.4",
     "mysql": "^2.15.0",
+    "onesignal": "^0.1.2",
     "orm": "^4.0.2",
     "password-hash": "^1.2.2",
     "socket.io": "^2.0.4",

@@ -212,9 +212,22 @@ exports.ConnectFriends = function (name1, name2, callback) {
                                         var user_in_chat2 = {};
                                         user_in_chat2.user = user2[0].id;
                                         user_in_chat2.chat = chat.id;
-                                        UserInChat.createAsync(user_in_chat2).then(function () {
-                                            console.log("Friendship is completed and confirmed. Chat room is created")
-                                            callback(true);
+                                        UserInChat.createAsync(user_in_chat2).then(function (chat) {
+                                            /*
+                                            TODO:// TADY POTREBUJI PRIDAT JEDNU LAJNU DO NOVEHO CHATU
+                                            */
+                                            console.log(chat);
+                                            var chatline = {};
+                                            chatline.text = "Friendship created!";
+                                            chatline.time = moment();
+                                            chatline.user = user1[0].id;
+                                            chatline.chat = chat.chat;
+                                            ChatLine.createAsync(chatline).then(function (){
+                                                callback(true);
+                                                console.log("Friendship is completed and confirmed. Chat room is created");
+                                            });
+                                        }).catch(function (reason) {
+                                            console.log(reason);
                                         });
                                     });
                                 });
@@ -328,15 +341,24 @@ exports.GetAvatarForChat = function (chat_id, ignored_id, callback) {
 
 exports.GetLastMsgForChat = function (chat_id, callback) {
     ChatLine.find({chat: chat_id}).order("-id").limit(1).run(function (err, msg) {
-        if (moment(msg[0].time).dayOfYear() === moment().dayOfYear())
-        {
-            msg[0].time =  moment(msg[0].time).hours() + ":" + moment(msg[0].time).minutes();
+        if (msg != null){
+            if (moment(msg[0].time).dayOfYear() === moment().dayOfYear())
+            {
+                msg[0].time =  moment(msg[0].time).hours() + ":" + moment(msg[0].time).minutes();
+            }
+            else
+            {
+                msg[0].time =  moment(msg[0].time).format("dddd [v]") + " " + moment(msg[0].time).hours() + ":" + moment(msg[0].time).minutes();
+            }
+            callback(msg);
         }
-        else
-        {
-            msg[0].time =  moment(msg[0].time).format("dddd [v]") + " " + moment(msg[0].time).hours() + ":" + moment(msg[0].time).minutes();
+        else {
+            callback(msg);
         }
-        callback(msg);
+        /*
+
+        */
+
     });
 };
 
@@ -371,9 +393,9 @@ exports.GetChatContent = function (chat_id, limit, offset, callback) {
 exports.SendChatMessage = function (chat_id, user, message, callback) {
     console.log("sending new message");
     console.log("searching for: " + user);
-    User.find({user: user}, function (err, user) {
-        console.log(user);
-        var user_id = user[0].id;
+    User.find({user: user}, function (err, _user) {
+        console.log(_user);
+        var user_id = _user[0].id;
 
         UserInChat.find({user: user_id, chat: chat_id}, function (err, chtr) {
             if (chtr.length > 0)
@@ -387,7 +409,7 @@ exports.SendChatMessage = function (chat_id, user, message, callback) {
                 ChatLine.createAsync(chat_line).then(function (result) {
                     console.log(result);
                     callback(result);
-                    require("./socket.js").SendNotification(chat_line);
+                    require("./socket.js").SendNotification(chat_line, user);
                 });
             }
             else
