@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Socket dokumentace</title>
+</head>
+<body>
+
+    <h2>url adresa:</h2>
+    <h2>http://78.102.46.113:2579</h2>
+
+    <hr>
+
+    <h3>Advance security package</h3>
+    <p>Okamžitě po připojení na socket server se spustí advance security package. To znamená, že se ihned po spuštění socketů musí
+    uživatel dotázat na socket login. <b>(Tento login je jiný, než login přes REST API - viz níže)</b></p>
+
+
+    <hr>
+
+
+    <h1>login</h1>
+    <ul>
+        <li>name (jméno uživatele)</li>
+        <li>token (token získaný při REST loginu)</li>
+        <li>device_id (device_id které odpovídá tokenu - získáno při REST loginu)</li>
+    </ul>
+    <p><b>login_resp</b>: odpověď: jako odpoveď dorazí json s errorem: true/false a dobou do vypršení tokenu</p>
+    <p>Odeslání požadavku na login musí proběhnout do dvou vteřin od připojení na server. Je třeba naslouchat na odpověď login_resp, kam přijde odpověď
+    o případném úspěchu či neúspěchu.</p>
+</body>
+</html>

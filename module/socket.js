@@ -49,6 +49,8 @@ io.on('connection', function(socket){
         }
     });
 
+
+
     socket.on("friend_request", function (data) {
         dbs.ConnectFriends(data.user1, data.user2, function (data) {
            if (data){
@@ -83,7 +85,6 @@ io.on('connection', function(socket){
        });
     });
 
-
     socket.on("disconnect", function () {
         console.log("Socket-device just got offline");
     });
@@ -93,3 +94,7 @@ server.listen(config.io_port, function () {
     console.log("Socket.io api is running at localhost:"+config.io_port);
 });
 
+exports.SendNotification = function (message) {
+    console.log("sending notification" + message);
+    io.emit("notification", message);
+};

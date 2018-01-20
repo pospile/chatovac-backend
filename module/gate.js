@@ -194,6 +194,35 @@ app.post('/users/get', function (req, res) {
 
 });
 
+app.post('/users/details', function (req, res) {
+
+    var token = req.body.token;
+    var id = req.body.id;
+
+    console.log("Returning users");
+
+    dbs.GetFriendInfo(id, function (data) {
+        res.json(data);
+    });
+
+});
+
+
+app.post('/users/get/friends', function (req, res) {
+
+    var token = req.body.token;
+    var id = req.body.id;
+
+    console.log("Returning users");
+
+    dbs.GetAllFriends(id, function (data) {
+        res.json(data);
+    });
+
+});
+
+
+
 
 
 

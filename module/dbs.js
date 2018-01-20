@@ -387,6 +387,7 @@ exports.SendChatMessage = function (chat_id, user, message, callback) {
                 ChatLine.createAsync(chat_line).then(function (result) {
                     console.log(result);
                     callback(result);
+                    require("./socket.js").SendNotification(chat_line);
                 });
             }
             else
@@ -404,3 +405,23 @@ exports.GetAllRegisteredUsers = function (callback) {
     });
 };
 
+exports.GetAllFriends = function (id, callback) {
+    db.driver.execQuery("SELECT * from tbFriendship fr where (fr.user1 = "+parseInt(id)+") || (fr.user2 = "+parseInt(id)+")", function (err, data) {
+        console.log(data);
+        callback(data);
+    });
+};
+
+exports.GetFriendInfo = function (id, callback) {
+    db.driver.execQuery("SELECT * from tbUser us where (us.id = "+parseInt(id)+")", function (err, data) {
+        console.log(data);
+        callback(data);
+    });
+};
+
+
+var callbacks = {};
+exports.RegisterChatListener = function (id, callback) {
+    callbacks[id.toString()].push(callback);
+    console.log(callbacks);
+};
