@@ -214,17 +214,20 @@ exports.ConnectFriends = function (name1, name2, callback) {
                                         user_in_chat2.chat = chat.id;
                                         UserInChat.createAsync(user_in_chat2).then(function (chat) {
                                             /*
-                                            TODO:// TADY POTREBUJI PRIDAT JEDNU LAJNU DO NOVEHO CHATU
+                                                TODO:// TADY POTREBUJI PRIDAT JEDNU LAJNU DO NOVEHO CHATU
                                             */
                                             console.log(chat);
                                             var chatline = {};
                                             chatline.text = "Friendship created!";
-                                            chatline.time = moment();
+                                            var time = new Date();
+                                            chatline.time = time;
                                             chatline.user = user1[0].id;
                                             chatline.chat = chat.chat;
                                             ChatLine.createAsync(chatline).then(function (){
                                                 callback(true);
                                                 console.log("Friendship is completed and confirmed. Chat room is created");
+                                            }).catch(function (reason) {
+                                                console.log(reason);
                                             });
                                         }).catch(function (reason) {
                                             console.log(reason);
@@ -341,7 +344,8 @@ exports.GetAvatarForChat = function (chat_id, ignored_id, callback) {
 
 exports.GetLastMsgForChat = function (chat_id, callback) {
     ChatLine.find({chat: chat_id}).order("-id").limit(1).run(function (err, msg) {
-        if (msg != null){
+        if (msg != undefined && msg[0] != undefined){
+            /*
             if (moment(msg[0].time).dayOfYear() === moment().dayOfYear())
             {
                 msg[0].time =  moment(msg[0].time).hours() + ":" + moment(msg[0].time).minutes();
@@ -350,10 +354,20 @@ exports.GetLastMsgForChat = function (chat_id, callback) {
             {
                 msg[0].time =  moment(msg[0].time).format("dddd [v]") + " " + moment(msg[0].time).hours() + ":" + moment(msg[0].time).minutes();
             }
+            */
+            if (moment(msg[0].time).dayOfYear() === moment().dayOfYear())
+            {
+                msg[0].time = moment(msg[0].time).format("HH:mm");
+            }
+            else
+            {
+                msg[0].time = moment(msg[0].time).format("DD.MM HH:mm");
+            }
+            console.log(msg[0].time);
             callback(msg);
         }
         else {
-            callback(msg);
+            callback({});
         }
         /*
 
