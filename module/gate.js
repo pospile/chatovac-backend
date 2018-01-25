@@ -1,4 +1,5 @@
 var express = require('express');
+var fileUpload = require('express-fileupload');
 var app = express();
 var security = require("./security.js");
 var dbs = require("./dbs.js");
@@ -14,11 +15,13 @@ app.use(function (req, res, next) {
 });
 
 
-var bodyParser = require('body-parser')
+var bodyParser = require('body-parser');
 app.use( bodyParser.json() );       // to support JSON-encoded bodies
 app.use(bodyParser.urlencoded({     // to support URL-encoded bodies
     extended: true
 }));
+app.use(fileUpload());
+app.use("/img", express.static("img"));
 
 app.get('/', function (req, res) {
     res.json({"status": "running", "version": 0.2});
@@ -81,6 +84,24 @@ app.post('/user/token', function (req, res) {
 
     dbs.CheckToken(name, token, device_id, function (data) {
        res.json(data);
+    });
+
+});
+
+app.post('/user/id', function (req, res) {
+
+    var name = req.body.name;
+    var token = req.body.token;
+
+    console.log("Searching for user");
+
+    dbs.GetIdFromName(name, function (id) {
+       if (id !== undefined){
+           res.json({"error": false, "id": id});
+       }
+       else {
+           res.json({"error": true, "desc": "invalid username or server error"});
+       }
     });
 
 });
@@ -160,6 +181,44 @@ app.post('/chat/send', function (req, res) {
 
 });
 
+app.post('/chat/rename', function (req, res) {
+
+    var chat_id = req.body.chat_id;
+    var name = req.body.name;
+    var token = req.body.token;
+
+    console.log("Sending message");
+    dbs.RenameChat(chat_id, name, function (data) {
+        if (data){
+            res.json({"error": false, "desc": "Name changed succesfully"});
+        }
+        else {
+            res.json({"error": true, "desc": "Name cannot be changed"});
+        }
+    });
+});
+
+
+
+app.post('/chat/invite', function (req, res) {
+
+    var chat_id = req.body.chat_id;
+    var user_id = req.body.user_id;
+    var token   = req.body.token;
+
+    console.log("Inviting user to chat");
+
+    dbs.AddUserToChat(user_id, chat_id, function (data) {
+       if (data){
+            res.json({"error": false, "desc": "Friend added to chat"});
+       } else {
+            res.json({"error": true, "desc": "Invalid server response"});
+       }
+    });
+
+});
+
+
 app.post('/users/connect', function (req, res) {
 
     var user1 = req.body.user1;
@@ -221,6 +280,75 @@ app.post('/users/get/friends', function (req, res) {
 
 });
 
+app.post('/users/get/friends', function (req, res) {
+
+    var token = req.body.token;
+    var id = req.body.id;
+
+    console.log("Returning users");
+
+    dbs.GetAllFriends(id, function (data) {
+        res.json(data);
+    });
+
+});
+
+app.post('/stories/upload', function(req, res) {
+
+    var token = req.body.token;
+    var chat = req.body.chat_id;
+
+    if (chat === undefined) {
+        console.log("CHAT NOT DEFINED!");
+        res.json({"error": true, "desc": 'File wasnt uploaded correctly, chat id not specified'});
+    }
+
+    if (!req.files)
+        res.json({"error": true, "desc": 'File wasnt uploaded correctly, no photo found'});
+
+
+    // The name of the input field (i.e. "sampleFile") is used to retrieve the uploaded file
+    var sampleFile = req.files.photo;
+
+    console.log(sampleFile);
+
+
+    const TokenGenerator = require('uuid-token-generator');
+    const tokgen2 = new TokenGenerator(256, TokenGenerator.BASE62);
+    var token = tokgen2.generate();
+
+    // Use the mv() method to place the file somewhere on your server
+    sampleFile.mv(start+"/img/"+token+".jpg", function(err) {
+        if (err)
+        {
+            res.json({"error": true, "desc": 'File wasnt uploaded correctly'});
+        }
+        else
+        {
+            dbs.InsertStoryIntoChat(chat, "/img/"+token+".jpg", function (data) {
+                res.json({"error": false, "desc": 'File uploaded!'});
+            });
+        }
+    });
+
+});
+
+app.post('/stories/get', function(req, res) {
+
+    var token = req.body.token;
+    var chat = req.body.chat_id;
+
+    if (chat !== undefined)
+    {
+        dbs.GetStoriesForChat(chat, function (data) {
+           res.json(data);
+        });
+    }
+    else
+    {
+        res.json({"error": true, "desc": "invalid data posted"});
+    }
+});
 
 
 

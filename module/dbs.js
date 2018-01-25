@@ -12,6 +12,7 @@ var UserInChat = null;
 var Chat = null;
 var ChatLine = null;
 var FriendShip = null;
+var StoryForChat = null;
 
 var db = null;
 
@@ -57,6 +58,11 @@ orm.connectAsync('mysql://root:25791998@35.187.189.40/chatovac')
             id : {type: 'serial', key: true},
             user1: Number,
             user2: Number
+        });
+        StoryForChat = _db.define("tbStoryForChat", {
+            id : {type: 'serial', key: true},
+            chat: Number,
+            url: String
         });
 
         /*
@@ -213,9 +219,7 @@ exports.ConnectFriends = function (name1, name2, callback) {
                                         user_in_chat2.user = user2[0].id;
                                         user_in_chat2.chat = chat.id;
                                         UserInChat.createAsync(user_in_chat2).then(function (chat) {
-                                            /*
-                                                TODO:// TADY POTREBUJI PRIDAT JEDNU LAJNU DO NOVEHO CHATU
-                                            */
+
                                             console.log(chat);
                                             var chatline = {};
                                             chatline.text = "Friendship created!";
@@ -434,6 +438,61 @@ exports.SendChatMessage = function (chat_id, user, message, callback) {
     });
 };
 
+exports.RenameChat = function (chat, new_name, callback) {
+    Chat.find({id: chat}, function (err, chat) {
+        console.log(chat);
+
+        chat[0].name = new_name;
+        chat[0].save(function (err) {
+            if (!err)
+                callback(true);
+            else
+                callback(false);
+        });
+
+    });
+};
+
+exports.GetIdFromName = function (name, callback) {
+    User.find({user: name}, function (err, _user) {
+        if (_user.length !== 0) {
+            var user_id = _user[0].id;
+            callback(user_id);
+        }
+        else {
+            callback(undefined);
+        }
+    });
+};
+
+
+exports.AddUserToChat = function (user, chat, callback) {
+    var user_in_chat = {};
+    user_in_chat.user = user;
+    user_in_chat.chat = chat;
+    UserInChat.createAsync(user_in_chat).then(function (resp) {
+        if (resp){
+
+            var chat_line = {};
+            chat_line.text = "User added to chat";
+            chat_line.time = new Date(moment());
+            chat_line.user = user;
+            chat_line.chat = chat;
+
+            ChatLine.createAsync(chat_line).then(function (result) {
+                console.log("result:" + result);
+                callback(true);
+                require("./socket.js").SendNotification(chat_line);
+            });
+
+        }
+        else {
+            console.log(resp);
+            callback(false);
+        }
+    });
+};
+
 exports.GetAllRegisteredUsers = function (callback) {
     db.driver.execQuery("SELECT id, user FROM tbUser", function (err, data) {
         console.log(data);
@@ -452,6 +511,25 @@ exports.GetFriendInfo = function (id, callback) {
     db.driver.execQuery("SELECT * from tbUser us where (us.id = "+parseInt(id)+")", function (err, data) {
         console.log(data);
         callback(data);
+    });
+};
+
+
+exports.InsertStoryIntoChat = function (chat, story_url, callback) {
+    var story = {};
+    story.chat = chat;
+    story.url = story_url;
+    StoryForChat.createAsync(story).then(function (resp) {
+        console.log("New story created");
+        callback(true);
+    });
+};
+
+
+exports.GetStoriesForChat = function (chat, callback) {
+    StoryForChat.find({chat: chat}, function (err, story) {
+        console.log(story);
+        callback(story);
     });
 };
 
